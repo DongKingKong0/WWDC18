@@ -42,11 +42,21 @@ public class MainScene: SKScene {
         let halfPi = CGFloat.pi / 2;
         let rotation = SKAction.rotate(byAngle: halfPi * CGFloat(rotateAngle), duration: 0)
         
-        newStreet.name = "street-\(position.x)-\(position.y)"
+        newStreet.name = "street"
         newStreet.setScale(0.002)
         newStreet.position = newStreetPosition
         newStreet.anchorPoint = CGPoint(x: 0.5,y: 0.5)
         newStreet.run(rotation)
+        
+        newStreet.userData = NSMutableDictionary()
+        newStreet.userData?.setValue(position, forKeyPath: "position")
+        newStreet.userData?.setValue(streetType, forKeyPath: "type")
+        newStreet.userData?.setValue(rotateAngle, forKeyPath: "rotation")
+        
+        print(newStreet.userData?.value(forKey: "position") ?? "Oooops, an error occured.")
+        print(newStreet.userData?.value(forKey: "type") ?? "Oooops, an error occured.")
+        print(newStreet.userData?.value(forKey: "rotation") ?? "Oooops, an error occured.")
+        print()
         
         addChild(newStreet)
     }
