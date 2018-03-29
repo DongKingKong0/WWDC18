@@ -6,6 +6,11 @@ import GameKit
 public class MainScene: SKScene {
     
     let defaultBackgroundColor = SKColor(red: 0.0, green: 0.4, blue: 0.15, alpha: 1.0)
+    let streetNodeName = "street"
+    let streetPositionKey = "position"
+    let streetTypeKey = "type"
+    let streetRotationKey = "rotation"
+    let isStreetKey = "isStreet"
     
     var streetTextures = [SKTexture]()
     
@@ -18,12 +23,7 @@ public class MainScene: SKScene {
         backgroundColor = defaultBackgroundColor
         
         loadTextures()
-        
-        for i in 0 ... 9 {
-            for j in 0 ... 9 {
-                addStreet(at: CGPoint(x: i, y: j), type: GKRandomSource.sharedRandom().nextInt(upperBound: 6), rotation: 0)
-            }
-        }
+        generateNewStreetMap()
     }
     
     func loadTextures() {
@@ -39,25 +39,153 @@ public class MainScene: SKScene {
         let newStreetPositionY = position.y / 10 + 0.05
         let newStreetPosition = CGPoint(x: newStreetPositionX, y: newStreetPositionY)
         
-        let halfPi = CGFloat.pi / 2;
+        let halfPi = CGFloat.pi / 2
         let rotation = SKAction.rotate(byAngle: halfPi * CGFloat(rotateAngle), duration: 0)
         
-        newStreet.name = "street"
+        newStreet.name = streetNodeName
         newStreet.setScale(0.002)
         newStreet.position = newStreetPosition
         newStreet.anchorPoint = CGPoint(x: 0.5,y: 0.5)
         newStreet.run(rotation)
         
         newStreet.userData = NSMutableDictionary()
-        newStreet.userData?.setValue(position, forKeyPath: "position")
-        newStreet.userData?.setValue(streetType, forKeyPath: "type")
-        newStreet.userData?.setValue(rotateAngle, forKeyPath: "rotation")
+        newStreet.userData?.setValue(true, forKeyPath: isStreetKey)
+        newStreet.userData?.setValue(position, forKeyPath: streetPositionKey)
+        newStreet.userData?.setValue(streetType, forKeyPath: streetTypeKey)
+        newStreet.userData?.setValue(rotateAngle, forKeyPath: streetRotationKey)
         
-        print(newStreet.userData?.value(forKey: "position") ?? "Oooops, an error occured.")
-        print(newStreet.userData?.value(forKey: "type") ?? "Oooops, an error occured.")
-        print(newStreet.userData?.value(forKey: "rotation") ?? "Oooops, an error occured.")
+        print(newStreet.userData?.value(forKey: streetPositionKey) ?? "Oooops, an error occured.")
+        print(newStreet.userData?.value(forKey: streetTypeKey) ?? "Oooops, an error occured.")
+        print(newStreet.userData?.value(forKey: streetRotationKey) ?? "Oooops, an error occured.")
         print()
         
         addChild(newStreet)
+    }
+    
+    func generateStreet (at position: CGPoint) {
+        var type = 0
+        var rotation = 0
+        var connections = [Bool]()
+        var connectionCount = 0
+        
+        connections.append(streetNodeHasConnection(node: CGPoint(x: position.x, y: position.y - 1), atSide: 2))
+        connections.append(streetNodeHasConnection(node: CGPoint(x: position.x + 1, y: position.y), atSide: 3))
+        connections.append(streetNodeHasConnection(node: CGPoint(x: position.x, y: position.y + 1), atSide: 0))
+        connections.append(streetNodeHasConnection(node: CGPoint(x: position.x - 1, y: position.y), atSide: 1))
+        print(connections)
+        
+        for i in 0 ... 3 {
+            connectionCount += connections[i] ? 1 : 0
+        }
+        print(connectionCount)
+        
+        switch connectionCount {
+        case 0:
+            type = 0
+            rotation = 0
+        case 1:
+            type = 1
+            if let firstPositiveIndex = connections.index(where: {$0 == true}) {
+                rotation = firstPositiveIndex
+            }
+        case 2:
+            type = 3
+            rotation = 0
+        case 3:
+            type = 4
+            if let firstNegativeIndex = connections.index(where: {$0 == false}) {
+                rotation = firstNegativeIndex
+            }
+        case 4:
+            type = 5
+            rotation = 1
+        default:
+            type = 0
+            rotation = 0
+        }
+        
+        addStreet(at: position, type: type, rotation: rotation)
+    }
+    
+    func generateNewStreetMap () {
+        for i in 0 ... 9 {
+            for j in 0 ... 9 {
+                generateStreet(at: CGPoint(x: i, y: j))
+            }
+        }
+    }
+    
+    func getStreetNode(at position: CGPoint) -> SKSpriteNode {
+        var returnNode = SKSpriteNode()
+        returnNode.userData = NSMutableDictionary()
+        returnNode.userData?.setValue(false, forKeyPath: isStreetKey)
+        
+        enumerateChildNodes(withName: streetNodeName) {
+            (node, stop) in
+            if node.userData?.value(forKey: self.streetPositionKey) as! CGPoint == position {
+                returnNode = node as! SKSpriteNode
+            }
+        }
+        return returnNode
+    }
+    
+    func getStreetAttribute(at position: CGPoint, key attributeKey: String) -> Int {
+        let node = getStreetNode(at: position)
+        if node.userData?.value(forKey: isStreetKey) as! Bool {
+            return node.userData?.value(forKey: attributeKey) as! Int
+        }
+        return -1
+    }
+    
+    func streetNodeHasConnection(node position: CGPoint, atSide side: Int) -> Bool {
+        let nodeType = getStreetAttribute(at: position, key: streetTypeKey)
+        let nodeRotation = getStreetAttribute(at: position, key: streetRotationKey)
+        var returnValue = false
+        
+        if nodeType >= 0 {
+            switch nodeType {
+            case 0:
+                returnValue = false
+            case 1:
+                if side == nodeRotation {
+                    returnValue = true
+                }
+            case 2:
+                if side == nodeRotation {
+                    returnValue = true
+                } else if nodeRotation == 0 {
+                    if abs(side - nodeRotation) == 3 {
+                        returnValue = true
+                    }
+                } else {
+                    if abs(side - nodeRotation) == 1 {
+                        returnValue = true
+                    }
+                }
+            case 3:
+                if side == nodeRotation || abs(side - nodeRotation) == 2 {
+                    returnValue = true
+                }
+            case 4:
+                if abs(side - nodeRotation) != 1 {
+                    returnValue = true
+                }
+            case 5:
+                returnValue = true
+            default:
+                returnValue = false
+            }
+        } else {
+            if arc4random_uniform(2) == 1 {
+                returnValue = true
+            }
+        }
+        return returnValue
+    }
+    
+    override public func didSimulatePhysics() {
+        super.didSimulatePhysics()
+        
+        //nothing to do here
     }
 }
