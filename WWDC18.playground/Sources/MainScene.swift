@@ -89,8 +89,29 @@ public class MainScene: SKScene {
                 rotation = firstPositiveIndex
             }
         case 2:
-            type = 3
-            rotation = 0
+            if connections[0] {
+                if connections[1] {
+                    type = 2
+                    rotation = 1
+                } else if connections[3] {
+                    type = 2
+                    rotation = 0
+                } else {
+                    type = 3
+                    rotation = 0
+                }
+            } else if connections[1] {
+                if connections[2] {
+                    type = 2
+                    rotation = 2
+                } else {
+                    type = 3
+                    rotation = 1
+                }
+            } else {
+                type = 2
+                rotation = 3
+            }
         case 3:
             type = 4
             if let firstNegativeIndex = connections.index(where: {$0 == false}) {
@@ -153,7 +174,7 @@ public class MainScene: SKScene {
             case 2:
                 if side == nodeRotation {
                     returnValue = true
-                } else if nodeRotation == 0 {
+                } else if nodeRotation < 2 {
                     if abs(side - nodeRotation) == 3 {
                         returnValue = true
                     }
@@ -167,7 +188,7 @@ public class MainScene: SKScene {
                     returnValue = true
                 }
             case 4:
-                if abs(side - nodeRotation) != 1 {
+                if side != nodeRotation {
                     returnValue = true
                 }
             case 5:
