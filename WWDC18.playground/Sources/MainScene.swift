@@ -49,7 +49,7 @@ public class MainScene: SKScene {
         newStreet.run(rotation)
         
         newStreet.userData = NSMutableDictionary()
-        newStreet.userData?.setValue(true, forKeyPath: isStreetKey)
+        newStreet.userData?.setValue(1, forKeyPath: isStreetKey)
         newStreet.userData?.setValue(position, forKeyPath: streetPositionKey)
         newStreet.userData?.setValue(streetType, forKeyPath: streetTypeKey)
         newStreet.userData?.setValue(rotateAngle, forKeyPath: streetRotationKey)
@@ -139,7 +139,7 @@ public class MainScene: SKScene {
     func getStreetNode(at position: CGPoint) -> SKSpriteNode {
         var returnNode = SKSpriteNode()
         returnNode.userData = NSMutableDictionary()
-        returnNode.userData?.setValue(false, forKeyPath: isStreetKey)
+        returnNode.userData?.setValue(0, forKeyPath: isStreetKey)
         
         enumerateChildNodes(withName: streetNodeName) {
             (node, stop) in
@@ -158,12 +158,23 @@ public class MainScene: SKScene {
         return -1
     }
     
+    func getNeighborStreetNodeCount(at position: CGPoint) -> Int {
+        let bottomStreetNodeExists = getStreetAttribute(at: CGPoint(x: position.x, y: position.y - 1), key: isStreetKey)
+        let rightStreetNodeExists = getStreetAttribute(at: CGPoint(x: position.x + 1, y: position.y), key: isStreetKey)
+        let topStreetNodeExists = getStreetAttribute(at: CGPoint(x: position.x, y: position.y + 1), key: isStreetKey)
+        let leftStreetNodeExists = getStreetAttribute(at: CGPoint(x: position.x - 1, y: position.y), key: isStreetKey)
+        let neighborNodeCount = bottomStreetNodeExists + rightStreetNodeExists + topStreetNodeExists + leftStreetNodeExists
+        
+        return neighborNodeCount
+    }
+    
     func streetNodeHasConnection(node position: CGPoint, atSide side: Int) -> Bool {
+        let nodeExists = getStreetAttribute(at: position, key: isStreetKey)
         let nodeType = getStreetAttribute(at: position, key: streetTypeKey)
         let nodeRotation = getStreetAttribute(at: position, key: streetRotationKey)
         var returnValue = false
         
-        if nodeType >= 0 {
+        if nodeExists == 1 {
             switch nodeType {
             case 0:
                 returnValue = false
@@ -197,7 +208,7 @@ public class MainScene: SKScene {
                 returnValue = false
             }
         } else {
-            if arc4random_uniform(2) == 1 {
+            if arc4random_uniform(3) > 0 {
                 returnValue = true
             }
         }
