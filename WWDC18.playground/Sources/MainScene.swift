@@ -24,6 +24,19 @@ public class MainScene: SKScene {
         
         loadTextures()
         generateNewStreetMap()
+        
+        let node = SKSpriteNode(texture: SKTexture(imageNamed: "car/car-0.png"))
+        
+        node.name = "abc"
+        node.setScale(0.002)
+        node.position = CGPoint(x: 0.5, y: 0.5)
+        node.anchorPoint = CGPoint(x: 0.5,y: 0.5)
+        
+        let rotation = SKAction.rotate(byAngle: 1, duration: 1)
+        let repeatRotation = SKAction.repeatForever(rotation)
+        node.run(repeatRotation)
+        
+        addChild(node)
     }
     
     func loadTextures() {
@@ -54,11 +67,6 @@ public class MainScene: SKScene {
         newStreet.userData?.setValue(streetType, forKeyPath: streetTypeKey)
         newStreet.userData?.setValue(rotateAngle, forKeyPath: streetRotationKey)
         
-        print(newStreet.userData?.value(forKey: streetPositionKey) ?? "Oooops, an error occured.")
-        print(newStreet.userData?.value(forKey: streetTypeKey) ?? "Oooops, an error occured.")
-        print(newStreet.userData?.value(forKey: streetRotationKey) ?? "Oooops, an error occured.")
-        print()
-        
         addChild(newStreet)
     }
     
@@ -72,12 +80,10 @@ public class MainScene: SKScene {
         connections.append(streetNodeHasConnection(node: CGPoint(x: position.x + 1, y: position.y), atSide: 3))
         connections.append(streetNodeHasConnection(node: CGPoint(x: position.x, y: position.y + 1), atSide: 0))
         connections.append(streetNodeHasConnection(node: CGPoint(x: position.x - 1, y: position.y), atSide: 1))
-        print(connections)
         
         for i in 0 ... 3 {
             connectionCount += connections[i] ? 1 : 0
         }
-        print(connectionCount)
         
         switch connectionCount {
         case 0:
@@ -119,7 +125,7 @@ public class MainScene: SKScene {
             }
         case 4:
             type = 5
-            rotation = 1
+            rotation = Int(arc4random_uniform(4))
         default:
             type = 0
             rotation = 0
@@ -163,6 +169,7 @@ public class MainScene: SKScene {
         let rightStreetNodeExists = getStreetAttribute(at: CGPoint(x: position.x + 1, y: position.y), key: isStreetKey)
         let topStreetNodeExists = getStreetAttribute(at: CGPoint(x: position.x, y: position.y + 1), key: isStreetKey)
         let leftStreetNodeExists = getStreetAttribute(at: CGPoint(x: position.x - 1, y: position.y), key: isStreetKey)
+        
         let neighborNodeCount = bottomStreetNodeExists + rightStreetNodeExists + topStreetNodeExists + leftStreetNodeExists
         
         return neighborNodeCount
