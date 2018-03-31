@@ -7,19 +7,40 @@ public class MainScene: SKScene {
     
     /// The default background color, should never appear on the screen
     let defaultBackgroundColor = SKColor(red: 0.0, green: 0.4, blue: 0.15, alpha: 1.0)
+    /// The speed for the car
+    let carSpeed: CGFloat = 0.0015
     /// These values are just node names and array keys
     let streetNodeName = "street"
     let streetPositionKey = "position"
     let streetTypeKey = "type"
     let streetRotationKey = "rotation"
     let isStreetKey = "isStreet"
+    let carNodeName = "car"
+    let carRotationKey = "rotation"
     
     /// All textures for the streets
     var streetTextures = [SKTexture]()
+    /// The texture for the car
+    var carTexture = SKTexture(imageNamed: "car/car-0.png")
+    /// The car type
+    var carType = 0
     
+    /// Last point where the playground was touched
+    var lastTouchLocation = CGPoint()
+    /// If the screen is currently touched
+    var touching = false
+    
+    /// This function is called once when executing the playground
     override public func didMove(to view: SKView) {
         super.didMove(to: view)
         setup()
+    }
+    
+    /// This function sets the type for the car
+    public func setCarType(to type: Int) {
+        if type < 5 {
+            carType = type
+        }
     }
     
     /// Call once when executing playground
@@ -29,25 +50,14 @@ public class MainScene: SKScene {
         
         loadTextures()
         generateNewStreetMap()
-        
-        /*let node = SKSpriteNode(texture: SKTexture(imageNamed: "car/car-0.png"))
-        
-        node.name = "car-test"
-        node.setScale(0.002)
-        node.position = CGPoint(x: 0.5, y: 0.5)
-        node.anchorPoint = CGPoint(x: 0.5,y: 0.5)
-        
-        let rotation = SKAction.rotate(byAngle: 1, duration: 1)
-        let repeatRotation = SKAction.repeatForever(rotation)
-        node.run(repeatRotation)
-        
-        addChild(node)*/
+        addCar(at: CGPoint(x: 0.5, y: 0.5))
     }
     
     /// This function just loads all street textures
     func loadTextures() {
         for i in 0 ... 5 {
             streetTextures.append(SKTexture(imageNamed: "street/street-\(i).png"))
+            carTexture = SKTexture(imageNamed: "car/car-\(carType).png")
         }
     }
     
@@ -146,7 +156,7 @@ public class MainScene: SKScene {
                 type = 2
                 rotation = 3
             }
-        // A crossroad with three streets or somethig that looks like that: ┴
+        // A crossroad with three streets (somethig that looks like that: ┴)
         case 3:
             type = 4
             // Get the index of the first (and only) element in the "connections" array that is false (the only side that has no connection)
@@ -161,8 +171,8 @@ public class MainScene: SKScene {
             rotation = Int(arc4random_uniform(4))
         // A lonely tree...
         default:
-            type = 0
-            rotation = 0
+            // type and rotation are already 0 by default, so nothing to do here :)
+            break
         }
         
         // Add the new street
@@ -275,8 +285,8 @@ public class MainScene: SKScene {
                 returnValue = true
             // A lonely tree
             default:
-                // A lonely tree has no streets anywhere
-                returnValue = false
+                // A lonely tree has no streets anywhere but returnValue is already false
+                break
             }
         // If the node doesn't exist return a random value
         } else {
@@ -289,10 +299,95 @@ public class MainScene: SKScene {
         return returnValue
     }
     
-    /// This function is called once every frame and does nothing
+    /// This function adds a car
+    func addCar(at position: CGPoint) {
+        /// The new car node
+        let newCar = SKSpriteNode(texture: carTexture)
+        // Set the node name to "car"
+        newCar.name = carNodeName
+        // Set the scaling to 0.002, witch is the original size of the image
+        newCar.setScale(0.002)
+        // Move the car to the given position
+        newCar.position = position
+        // Set the anchor point to the center of the node
+        newCar.anchorPoint = CGPoint(x: 0.5,y: 0.5)
+        
+        // Rotate the car
+        let rotation = SKAction.rotate(byAngle: -CGFloat.pi / 2, duration: 0)
+        newCar.run(rotation)
+        
+        addChild(newCar)
+    }
+    
+    /// This function controls the player car
+    func controlPlayer(location position: CGPoint) {
+        // We have only one node with name "car" so node is the player node
+        enumerateChildNodes(withName: carNodeName) {
+            (node, stop) in
+            /// Current position of the car
+            let oldNodePosition = node.position
+            /// Angle to rotate (look to touching position)
+            let angle = atan2(position.y - oldNodePosition.y, position.x - oldNodePosition.x)
+            /// New position for the car
+            let newPositionX = oldNodePosition.x + cos(angle) * self.carSpeed
+            let newPositionY = oldNodePosition.y + sin(angle) * self.carSpeed
+            
+            // Rotate the car (facing to the finger/cursor)
+            let rotation = SKAction.rotate(toAngle: angle - CGFloat.pi / 2, duration: 0)
+            node.run(rotation)
+            
+            // Move the car
+            node.position = CGPoint(x: newPositionX, y: newPositionY)
+        }
+    }
+    
+    /// This function is called once every frame
     override public func didSimulatePhysics() {
         super.didSimulatePhysics()
         
-        //nothing to do here
+        // If somebody is touching the screen, move the car to the finger
+        if touching {
+            controlPlayer(location: lastTouchLocation)
+        }
+    }
+    
+    /// This fuction is called when somebody touches the screen
+    override public func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesBegan(touches, with: event)
+        
+        for touch in touches {
+            let location = touch.location(in: self)
+            // Set last touch location to current touch location
+            lastTouchLocation = location
+            // Set touching to true
+            touching = true
+        }
+    }
+    
+    /// This is called when somebody moves their finger (or cursor)
+    override public func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesMoved(touches, with: event)
+        
+        for touch in touches {
+            let location = touch.location(in: self)
+            // Set last touch location to current touch location
+            lastTouchLocation = location
+        }
+    }
+    
+    /// This is called once when nothing is touching the screen
+    override public func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesEnded(touches, with: event)
+        
+        // Just set touching to false
+        touching = false
+    }
+    
+    /// This does exactly the same as touchesEnded(_:with:)
+    public override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesCancelled(touches, with: event)
+        
+        // Just set touching to false
+        touching = false
     }
 }
