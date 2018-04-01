@@ -25,7 +25,7 @@ public class MainScene: SKScene {
     var carTexture = SKTexture(imageNamed: "car/car-0.png")
     /// The car type
     var carType = 0
-    
+    /// Texture for the reset button
     var buttonTexture = SKTexture(imageNamed: "recreate.png")
     
     /// Last point where the playground was touched
@@ -303,17 +303,25 @@ public class MainScene: SKScene {
         return returnValue
     }
     
+    /// Add the reset button node
     func addResetButton(at position: CGPoint) {
+        /// The new node
         let resetButton = SKSpriteNode(texture: buttonTexture)
+        // Set the node name to "resetButton"
         resetButton.name = buttonNodeName
+        // Set scale to 0.002
         resetButton.setScale(0.002)
+        // Set node position (by default the bottom-left corner)
         resetButton.position = position
+        // Stay always in foreground
         resetButton.zPosition = 1
+        // Set anchor point to center of the node
         resetButton.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         
         addChild(resetButton)
     }
     
+    /// Regenerate street nodes
     func reset() {
         rotateButton()
         removeNodes()
@@ -321,19 +329,25 @@ public class MainScene: SKScene {
         addCar(at: CGPoint(x: 0.5, y: 0.5))
     }
     
+    /// This function rotates the button
     func rotateButton() {
+        // Get the button node
         enumerateChildNodes(withName: buttonNodeName) {
             (node, stop) in
+            // Rotate the node
             let rotation = SKAction.rotate(byAngle: -CGFloat.pi * 2, duration: 0.75)
             node.run(rotation)
         }
     }
     
+    /// remove all nodes
     func removeNodes() {
+        // Remove all streets
         enumerateChildNodes(withName: streetNodeName) {
             (node, stop) in
             node.removeFromParent()
         }
+        // Remove all cars
         enumerateChildNodes(withName: carNodeName) {
             (node, stop) in
             node.removeFromParent()
