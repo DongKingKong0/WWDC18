@@ -17,6 +17,7 @@ public class MainScene: SKScene {
     let isStreetKey = "isStreet"
     let carNodeName = "car"
     let carRotationKey = "rotation"
+    let buttonNodeName = "resetButton"
     
     /// All textures for the streets
     var streetTextures = [SKTexture]()
@@ -24,6 +25,8 @@ public class MainScene: SKScene {
     var carTexture = SKTexture(imageNamed: "car/car-0.png")
     /// The car type
     var carType = 0
+    
+    var buttonTexture = SKTexture(imageNamed: "recreate.png")
     
     /// Last point where the playground was touched
     var lastTouchLocation = CGPoint()
@@ -51,14 +54,15 @@ public class MainScene: SKScene {
         loadTextures()
         generateNewStreetMap()
         addCar(at: CGPoint(x: 0.5, y: 0.5))
+        addResetButton(at: CGPoint(x: 0.05, y: 0.05))
     }
     
-    /// This function just loads all street textures
+    /// This function just loads all textures
     func loadTextures() {
         for i in 0 ... 5 {
             streetTextures.append(SKTexture(imageNamed: "street/street-\(i).png"))
-            carTexture = SKTexture(imageNamed: "car/car-\(carType).png")
         }
+        carTexture = SKTexture(imageNamed: "car/car-\(carType).png")
     }
     
     /// This function adds a SPECIFIC street node
@@ -299,6 +303,43 @@ public class MainScene: SKScene {
         return returnValue
     }
     
+    func addResetButton(at position: CGPoint) {
+        let resetButton = SKSpriteNode(texture: buttonTexture)
+        resetButton.name = buttonNodeName
+        resetButton.setScale(0.002)
+        resetButton.position = position
+        resetButton.zPosition = 1
+        resetButton.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        
+        addChild(resetButton)
+    }
+    
+    func reset() {
+        rotateButton()
+        removeNodes()
+        generateNewStreetMap()
+        addCar(at: CGPoint(x: 0.5, y: 0.5))
+    }
+    
+    func rotateButton() {
+        enumerateChildNodes(withName: buttonNodeName) {
+            (node, stop) in
+            let rotation = SKAction.rotate(byAngle: -CGFloat.pi * 2, duration: 0.75)
+            node.run(rotation)
+        }
+    }
+    
+    func removeNodes() {
+        enumerateChildNodes(withName: streetNodeName) {
+            (node, stop) in
+            node.removeFromParent()
+        }
+        enumerateChildNodes(withName: carNodeName) {
+            (node, stop) in
+            node.removeFromParent()
+        }
+    }
+    
     /// This function adds a car
     func addCar(at position: CGPoint) {
         /// The new car node
@@ -361,6 +402,13 @@ public class MainScene: SKScene {
             lastTouchLocation = location
             // Set touching to true
             touching = true
+            
+            let touchedNode = self.atPoint(location)
+            if let touchedNodeName = touchedNode.name {
+                if touchedNodeName == buttonNodeName {
+                    reset()
+                }
+            }
         }
     }
     

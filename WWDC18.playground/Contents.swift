@@ -2,6 +2,7 @@
 import SpriteKit
 import PlaygroundSupport
 //: Press and hold to move the car.
+//: Press the apple in the bottom-left corner to regenerate the streets.
 //:
 //: This code is for presenting the streets in the Live View:
 let width = 500
